@@ -17,13 +17,16 @@ def rework(threelines):
   return [''.join(result[i]) for i,x in enumerate(result)]
 
 
-def numberlookup(codes,numlookupdict):
+def charlookup(codes,lookupdict):
   """ """
-  #testy test
+  finalseq = ''
+  for x in codes:
+    finalseq += lookupdict[x]
+  return finalseq
 
 
 
-def fileparser(filename,iskeyortest,numlookupdict):
+def fileparser(filename,iskeyortest,lookupdict):
   """ Loops through files four lines at a time and
   takes appropriate action based on 'iskeyortest' param """
   #
@@ -35,9 +38,9 @@ def fileparser(filename,iskeyortest,numlookupdict):
       if i % 4 == 3 and i>0:
         n = rework(threelines)
         if iskeyortest == 'key':
-          results = dict(zip(n,line)
+          results = dict(zip(n,line))
         elif iskeyortest == 'test':
-          results.append(numberlookup(n,numlookupdict))
+          results.append(charlookup(n,lookupdict))
           threelines = []
         else: 
           print 'Error:Instructions unclear'
@@ -48,7 +51,6 @@ def fileparser(filename,iskeyortest,numlookupdict):
 
 def main(keyfile, testfile):
   """ """
-  #
 
   #
   numlookupdict = fileparser(keyfile, 'key',[])
@@ -56,7 +58,7 @@ def main(keyfile, testfile):
   #
   finalnums = fileparser(testfile, 'test', numlookupdict)
 
-  return finalnums 
+  print finalnums 
 
 
 if __name__ == '__main__':
