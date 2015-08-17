@@ -1,5 +1,8 @@
 """
+Coding Dojo Code Kata - KataBankoOCR
+http://www.codingdojo.org/cgi-bin/index.pl?KataBankOCR
 
+Written by Amber Willett: github.com/aelise
 """
 
 import sys
@@ -72,6 +75,32 @@ def mychecksum(num):
   else:
     return False
 
+def offbyone(codestr,acceptdict,offbywhat):
+  """ Replaces one char in each code str with the offbywhat param 
+  (one char at a time, each in turn) and compares to a checksum 
+  function. Returns either a 9-digit str (if there is exactly one 
+  off-by-one that passes checksum) or 'AMB' otherwise
+  """
+  possibles = []
+  acceptdict = {v: k for k, v in acceptdict.items()}
+  for digit in codestr:
+    d = acceptdict(digit)
+    for x in offbywhat:
+      for y in d:
+        d = d[:y] + x + d[y+1:]
+        if mychecksum(x)==True:
+          if possibles==[]:
+            possibles = d
+          else:
+            return 'AMB'
+
+  if possibles == []:
+    return 'AMB'
+  else:
+    return possibles 
+
+
+
 
 def main(keyfile, testfile):
   """ 
@@ -80,22 +109,38 @@ def main(keyfile, testfile):
   numlookupdict = fileparser(keyfile, 'key',[])
   
   #Proceed with actual test data to be parsed
-  finalnums = fileparser(testfile, 'test', numlookupdict)
-  print finalnums
+  nums = fileparser(testfile, 'test', numlookupdict)
+  
+  print 'Story 1:'
+  print nums
 
-  #Checksum each num in finalnums and record pass/fail
-  for i,x in enumerate(finalnums):
+  #Checksum each num in taggednums and record errors:
+  # 'ERR' - failed checksum, 'ILL' - contains unknown char
+  taggednums = nums
+  for i,x in enumerate(taggednums):
     if x.find('?')==-1:
       if mychecksum(x)==False:
-        finalnums[i]=x+' ERR'
+        taggednums[i] = x +' ERR'
     else:
-      finalnums[i]=x+' ILL'
+      taggednums[i] = x +' ILL'
 
+  print 'Story 2/3:'
+  print taggednums
+
+  #Check ERR/ILL values for missing _ or | which would make
+  #valid checksum (label AMB if none are found or multiple 
+  #possibilities are found)
+  finalnums = taggednums
+  for i,x in enumerate(finalnums):
+    if x.find('ERR') or x.find('ILL'):
+      temp = offbyone(x[:9],numlookupdict,'_| ')
+      if temp == 'AMB':
+        finalnums[i] = finalnums[i][:9] + ' AMB'
+      else:
+        finalnums[i] = temp
+
+  print 'Story 4:'
   print finalnums
-
-  #Check ERR/ILL values for missing _ or | (or label AMB)
-
-
 
 
 
