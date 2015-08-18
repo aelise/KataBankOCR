@@ -7,6 +7,12 @@ Written by Amber Willett: github.com/aelise
 
 import sys
 
+class AccountNumber():
+
+  def __init__(self, underscoresandpipes, lookupdict):
+    self.codes = rework3x3to1x9(underscoresandpipes)
+    self.num = charlookup(self.codes, lookupdict)
+
 
 def rework3x3to1x9(threelines):
   """ Takes an array of three lines, X*3 characters each and reworks  
@@ -26,123 +32,134 @@ def rework3x3to1x9(threelines):
 
 def charlookup(mykeys,lookupdict):
   """ Simple dict lookup for a list of keys
-      Assumes values are strings and returns one aggregated string. 
+      Assumes values are strings and returns a list of characters. 
   """
-  finalseq = ''
+  finalseq = []
   for x in mykeys:
     try:
-      finalseq += lookupdict[x]
+      finalseq.append(lookupdict[x])
     except Exception, e:
       finalseq += '?'
   return finalseq
 
 
-def fileparser(filename,iskeyortest,lookupdict):
-  """ Loops through files four lines at a time and
-      takes appropriate action based on 'iskeyortest' param 
+def getlookuptable(filename):
+  """ Makes lookup table for mapping characters to their 3x3 
+      representation. 
   """
   with open(filename) as myfile:
     threelines = []
-    results = []
+    for i,line in enumerate(myfile):
+      if i == 3:
+        n = rework3x3to1x9(threelines)
+        results = dict(zip(n,line))
+      else:
+        threelines.append(line)
+  return results
+
+
+def fileparser(filename,lookupdict):
+  """ Loops through file four lines at a time and returns a
+      list of account number objects (having translated the numbers)
+  """
+  results = []
+  threelines = []
+  with open(filename) as myfile:
     for i,line in enumerate(myfile):
       if i % 4 == 3 and i>0:
-        n = rework3x3to1x9(threelines)
-        if iskeyortest == 'key':
-          results = dict(zip(n,line))
-        elif iskeyortest == 'test':
-          results.append(charlookup(n,lookupdict))
-          threelines = []
-        else: 
-          print 'Error:Instructions unclear'
+        results.append(AccountNumber(threelines, lookupdict))
+        threelines = []
       else:
-          threelines.append(line)
+        threelines.append(line)
   return results
 
 
 def mychecksum(num):
   """ Compares a 9-digit number to the following checksum:
-      checksum calculation:
       (d1+2*d2+3*d3 +..+9*d9) mod 11 = 0
       Returns boolean 
+      Assumes arg is a list of either ints or strings 
+      (or a single string)
   """
-  num = str(num)
+  if '?' in num:
+    return False
+
   check = 0
   for i in range(9):
-    check += (i+1)*int(num[8-i])
+    check += (i+1) * int(num[8-i])
 
-  if check%11==0:
+  if check % 11 == 0:
     return True
   else:
     return False
 
-def offbyone(codestr,acceptdict,offbywhat):
+
+def offbyone(codelist,acceptdict,offbywhat):
   """ Replaces one char in each code str with the offbywhat param 
-  (one char at a time, each in turn) and compares to a checksum 
-  function. Returns either a 9-digit str (if there is exactly one 
-  off-by-one that passes checksum) or 'AMB' otherwise
+      (one char at a time, each in turn) and compares to a checksum 
+      function. Returns either a list of 9 digits (if there is exactly one 
+      off-by-one that passes checksum) or 'AMB' otherwise
   """
   possibles = []
-  acceptdict = {v: k for k, v in acceptdict.items()}
-  for digit in codestr:
-    d = acceptdict(digit)
+  for i,code in enumerate(codelist):
     for x in offbywhat:
-      for y in d:
-        d = d[:y] + x + d[y+1:]
-        if mychecksum(x)==True:
-          if possibles==[]:
-            possibles = d
+      for j,y in enumerate(code):
+        newcode = code[:j] + x + code[j+1:]
+        codelist[i] = newcode
+        newnum = charlookup(codelist, acceptdict)
+        if (newcode in acceptdict) and (mychecksum(newnum) == True):
+          if possibles == []:
+            possibles = newnum
           else:
-            return 'AMB'
+            return ' AMB'
 
   if possibles == []:
-    return 'AMB'
+    return ' AMB'
   else:
     return possibles 
-
-
 
 
 def main(keyfile, testfile):
   """ 
   """
   #Make lookup table for known characters
-  numlookupdict = fileparser(keyfile, 'key',[])
+  numlookupdict = getlookuptable(keyfile)
   
   #Proceed with actual test data to be parsed
-  nums = fileparser(testfile, 'test', numlookupdict)
+  nums = fileparser(testfile, numlookupdict)
   
   print 'Story 1:'
-  print nums
+  print [''.join(x.num) for x in nums]
 
   #Checksum each num in taggednums and record errors:
   # 'ERR' - failed checksum, 'ILL' - contains unknown char
   taggednums = nums
-  for i,x in enumerate(taggednums):
-    if x.find('?')==-1:
-      if mychecksum(x)==False:
-        taggednums[i] = x +' ERR'
+  for x in taggednums:
+    if '?' in x.num:
+      x.num.append(' ILL')
     else:
-      taggednums[i] = x +' ILL'
+      if mychecksum(x.num) == False:
+        x.num.append(' ERR')
+      
 
   print 'Story 2/3:'
-  print taggednums
+  print [''.join(x.num) for x in taggednums]
 
   #Check ERR/ILL values for missing _ or | which would make
   #valid checksum (label AMB if none are found or multiple 
   #possibilities are found)
   finalnums = taggednums
-  for i,x in enumerate(finalnums):
-    if x.find('ERR') or x.find('ILL'):
-      temp = offbyone(x[:9],numlookupdict,'_| ')
-      if temp == 'AMB':
-        finalnums[i] = finalnums[i][:9] + ' AMB'
+  for y in finalnums:
+    if ' ERR' in y.num or ' ILL' in y.num:
+      temp = offbyone(y.codes, numlookupdict, '_| ')
+      if temp == ' AMB':
+        y.num.append(' AMB')
       else:
-        finalnums[i] = temp
+        y.num = temp
 
   print 'Story 4:'
-  print finalnums
-
+  print [''.join(x.num) for x in finalnums]
 
 
 if __name__ == '__main__':
-    main(sys.argv[1],sys.argv[2])
+    main(sys.argv[1], sys.argv[2])
