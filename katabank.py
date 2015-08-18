@@ -102,16 +102,18 @@ def offbyone(codelist,acceptdict,offbywhat):
   """
   possibles = []
   for i,code in enumerate(codelist):
+    dupecodelist = codelist[:]
     for x in offbywhat:
       for j,y in enumerate(code):
         newcode = code[:j] + x + code[j+1:]
-        codelist[i] = newcode
-        newnum = charlookup(codelist, acceptdict)
-        if (newcode in acceptdict) and (mychecksum(newnum) == True):
-          if possibles == []:
-            possibles = newnum
-          else:
-            return ' AMB'
+        if newcode in acceptdict:
+          dupecodelist[i] = newcode
+          newnum = charlookup(dupecodelist, acceptdict)
+          if mychecksum(newnum) == True:
+            if possibles == []:
+              possibles = newnum
+            else:
+              return ' AMB'
 
   if possibles == []:
     return ' AMB'

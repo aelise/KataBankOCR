@@ -16,8 +16,8 @@ temp==[' _ | ||_|',
  ' _ |_||_|',
  ' _ |_| _|']
 
-tempdict = katabank.fileparser('mykeyfile.txt','key',[])
-temp==tempdict
+tempdict = katabank.getlookuptable('mykeyfile.txt')
+tempdict[' _ |_  _|']=='5'
 
 katabank.charlookup(temp,tempdict)
 
@@ -39,4 +39,6 @@ wholetest = katabank.fileparser('testdata.txt','test',tempdict)
 run katabank 'mykeyfile.txt' 'testdata.txt'
 
 katabank.mychecksum('457508000')==True
-katabank.mychecksum('664371495')==False
+katabank.mychecksum(['6', '6', '4', '3', '7', '1', '4', '9', '5'])==False
+
+katabank.offbyone(temp2,tempdict,'_| ')
